@@ -72,11 +72,11 @@ class TaggedQueue(BaseQueue):
 class BaseQueueTests(TestCase):
 
     def setUp(self):
-        self.queue = AdditionQueue
+        self.queue_class = AdditionQueue
         self.worker = BaseWorker()
 
     def __append_task(self):
-        return self.queue.append(1, 2)
+        return self.queue_class.append(1, 2)
 
     def test__add_task__creates_task(self):
         self.assertEqual(0, self.worker.count)
@@ -86,7 +86,7 @@ class BaseQueueTests(TestCase):
             task.data,
             {'x': 1, 'y': 2},
         )
-        self.assertIn(self.queue.__name__, task.queue_class_name)
+        self.assertEqual(1, self.queue_class.count())
 
     def test__process_one__empty_queue__raises_exception(self):
         self.assertRaises(NoEligibleTaskException, self.worker.process_one)

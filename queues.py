@@ -1,6 +1,7 @@
 import logging
-from .models import Task, DEFAULT_MAX_ATTEMPTS, DEFAULT_TASK_PRIORITY
-from .workers import BaseWorker
+
+from .models import Task
+from . import app_settings
 
 log = logging.getLogger(__name__)
 
@@ -8,18 +9,15 @@ log = logging.getLogger(__name__)
 class BaseQueue:
 
     tag = '__default__'
-    max_attempts = DEFAULT_MAX_ATTEMPTS
-    task_priority = DEFAULT_TASK_PRIORITY
+    task_priority = app_settings.DEFAULT_TASK_PRIORITY
+    max_attempts = app_settings.DEFAULT_MAX_ATTEMPTS
 
-    @classmethod
-    def get_worker(cls):
-        return BaseWorker(tags=[cls.tag])
 
     @classmethod
     def append(cls, **kwargs):
         task = Task()
         task.data = kwargs
-        task.queue_class_name = cls.queue_class_name()
+        task.queue_class_name = cls.__queue_class_name()
         task.tag = cls.tag
         task.max_attempts = cls.max_attempts
         task.priority = cls.task_priority
@@ -33,10 +31,10 @@ class BaseQueue:
 
     @classmethod
     def count(cls):
-        return Task.objects.filter(queue_class_name=cls.queue_class_name()).count()
+        return Task.objects.filter(queue_class_name=cls.__queue_class_name()).count()
 
     @classmethod
-    def queue_class_name(cls):
+    def __queue_class_name(cls):
         return '.'.join([cls.__module__, cls.__name__])
 
     @classmethod

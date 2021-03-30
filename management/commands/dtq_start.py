@@ -12,7 +12,12 @@ class Command(BaseCommand):
         dtq_settings = {}
         if hasattr(settings, 'DJANGO_TASK_QUEUE'):
             dtq_settings = settings.DJANGO_TASK_QUEUE
+        else:
+            print('No DJANGO_TASK_QUEUE configuration was found in project settings. Using defaults.')
+
         worker_class_names = dtq_settings.get('WORKERS', ['django_task_queue.workers.BaseWorker'])
+        print('Worker class names: %s' % worker_class_names)
+
         workers = [import_class(name)() for name in worker_class_names]
 
         def signal_handler(signum, frame):
