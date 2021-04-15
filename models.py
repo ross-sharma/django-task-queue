@@ -1,7 +1,6 @@
-from django.db import models
 import json
 
-from django_task_queue import app_settings
+from django.db import models
 
 
 class Task(models.Model):
@@ -15,8 +14,8 @@ class Task(models.Model):
     tag = models.CharField(db_index=True, max_length=128)
     error_count = models.IntegerField(default=0)
     retry_allowed = models.BooleanField(default=True, db_index=True)
-    max_attempts = models.IntegerField(default=app_settings.DEFAULT_MAX_ATTEMPTS)
-    priority = models.IntegerField(default=app_settings.DEFAULT_TASK_PRIORITY)
+    max_attempts = models.IntegerField()
+    priority = models.IntegerField()
 
     def __str__(self):
         return '%s (%s)' % (self.queue_class_name, self.data_json[:50])

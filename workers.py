@@ -11,35 +11,42 @@ from django.utils import timezone
 
 from .exceptions import NoEligibleTaskException, FatalTaskException, NoIncrementErrorCountException
 from .models import Task
-from . import util, app_settings
+from . import util
+from .app_settings import get_setting, Keys
+from .queues import BaseQueue
+
+_logger = logging.getLogger(__name__)
+
+_stop_signals = list(filter(lambda s: s, [getattr(signal, name, None) for name in (
+    'CTRL_C_EVENT',
+    'CTRL_BREAK_EVENT',
+    'SIGINT',
+    'SIGTERM',
+    'SIGKILL',
+)]))
 
 
 class BaseWorker(threading.Thread):
 
-    def __init__(self, tags=None, log=logging.getLogger(__name__)):
+    def __init__(self, tags=None, logger=_logger):
         self.tags = tags or ['__default__']
         self.lock_id = uuid4()
-        self.min_seconds_between_processing_attempts = app_settings.DEFAULT_MIN_SECONDS_BETWEEN_PROCESSING_ATTEMPTS
-        self._log = log
-        self._stop_flag = threading.Event()
+        self.min_seconds_between_processing_attempts = get_setting(Keys.DEFAULT_MIN_SECONDS_BETWEEN_ATTEMPTS)
+        self._logger = logger
+        self.stop_flag = threading.Event()
         self._log_prefix = f'({self.__class__.__name__}, {self.tags})'
         super().__init__()
 
     def run(self):
-        self.__log('Thread starting.')
-        while not self._stop_flag.is_set():
+        self._log('Thread starting.')
+        while not self.stop_flag.is_set():
             try:
                 self.process_one()
             except NoEligibleTaskException:
-                self.__log('No eligible task found. Sleeping.', level=logging.DEBUG)
-                print('Task daemon: sleeping')
+                self._log('No eligible task found. Sleeping.', level=logging.DEBUG)
                 time.sleep(1)
         else:
-            self.__log('Stop flag set. Thread terminating.')
-
-    def signal_handler(self, signum, frame):
-        if signum in (signal.SIGTERM, signal.SIGINT):
-            self._stop_flag.set()
+            self._log('Stop flag set. Thread terminating.')
 
     @property
     def count(self):
@@ -72,12 +79,12 @@ class BaseWorker(threading.Thread):
         if not task:
             raise NoEligibleTaskException
 
-        self.__log('Processing task: %s' % task)
-        queue = util.import_class(task.queue_class_name)()
+        self._log('Processing task: %s' % task)
 
         try:
+            queue = util.import_class(task.queue_class_name, BaseQueue)()
             result = queue.process(**task.data)
-            self.__log('Task processed. Result: %s' % result)
+            self._log('Task processed. Result: %s' % result)
             task.delete()
             return result
         except Exception as e:
@@ -86,7 +93,7 @@ class BaseWorker(threading.Thread):
                 self.__log_exception(e)
                 task.error_count += 1
             else:
-                self.__log('No increment error: %s' % e)
+                self._log('No increment error: %s' % e)
             task.last_error = str(e)
             task.lock_id = ''
 
@@ -95,10 +102,10 @@ class BaseWorker(threading.Thread):
 
             if retry_limit_reached:
                 task.retry_allowed = False
-                self.__log('Maximum attempts reached for this task.', logging.WARNING)
+                self._log('Maximum attempts reached for this task.', logging.WARNING)
             elif is_fatal:
                 task.retry_allowed = False
-                self.__log('Task had a fatal error. Will not be retried.', logging.ERROR)
+                self._log('Task had a fatal error. Will not be retried.', logging.ERROR)
 
             task.save()
             return e
@@ -107,12 +114,12 @@ class BaseWorker(threading.Thread):
         while self.count_eligible:
             self.process_one()
 
-    def __log(self, msg, level=logging.INFO):
+    def _log(self, msg, level=logging.INFO):
         msg = f'{self._log_prefix} {msg}'
-        self._log.log(level=level, msg=msg)
+        self._logger.log(level=level, msg=msg)
 
     def __log_exception(self, exc):
-        self._log.exception(exc)
+        self._logger.exception(exc)
 
     def __filter(self, *args, **kwargs):
         return Task.objects.filter(tag__in=self.tags, *args, **kwargs)
@@ -124,3 +131,48 @@ class BaseWorker(threading.Thread):
         return tasks.filter(retry_allowed=True).filter(
             Q(last_attempt_datetime__isnull=True) | Q(last_attempt_datetime__lte=last_attempt_limit)
         )
+
+
+class AllWorkersThread(threading.Thread):
+
+    def __init__(self, logger=_logger):
+        super().__init__()
+        self.__logger = logger
+        self.__attach_signal_handlers()
+
+        worker_class_names = get_setting(Keys.WORKERS)
+        self.__log('In __init__(): Worker class names: %s' % worker_class_names)
+        self.__workers = [
+            util.import_class(name, check_subclass_of=BaseWorker)()
+            for name in worker_class_names
+        ]
+
+    def run(self):
+        [w.start() for w in self.__workers]
+        [w.join() for w in self.__workers]
+
+    def handle_stop_signal(self, sig_num, frame):
+        self.__log(f'{self}: Signal received: {sig_num} {frame}')
+        [w.stop_flag.set() for w in self.__workers]
+
+    def __attach_signal_handlers(self):
+        success = False
+        for sig_num in _stop_signals:
+            try:
+                signal.signal(sig_num, self.handle_stop_signal)
+                self.__log('Attached to signal %s' % sig_num)
+                success = True
+            except Exception:
+                pass
+        if not success:
+            raise OSError('Unable to attach to any of the following signals: %s' % _stop_signals)
+
+    def __log(self, msg, level=logging.INFO):
+        msg = f'{__name__}: {msg}'
+        self.__logger.log(msg=msg, level=level)
+
+
+def start_all_workers():
+    thread = AllWorkersThread()
+    thread.start()
+    thread.join()

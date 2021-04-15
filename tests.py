@@ -1,12 +1,17 @@
+import signal
 from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
-from django_task_queue.exceptions import NoEligibleTaskException, FatalTaskException, NoIncrementErrorCountException
+from django_task_queue.exceptions import (
+    NoEligibleTaskException,
+    FatalTaskException,
+    NoIncrementErrorCountException,
+)
 from django_task_queue.queues import BaseQueue
-from django_task_queue.workers import BaseWorker
+from django_task_queue.workers import BaseWorker, AllWorkersThread
 
 
 class AdditionQueue(BaseQueue):
@@ -21,7 +26,6 @@ class AdditionQueue(BaseQueue):
 
 
 class ErrorQueue(BaseQueue):
-
     max_attempts = 2
 
     class ForcedException(Exception):
@@ -37,7 +41,6 @@ class ErrorQueue(BaseQueue):
 
 
 class FatalErrorQueue(BaseQueue):
-
     max_attempts = 10
 
     @classmethod
@@ -62,7 +65,6 @@ class NoIncrementErrorCountQueue(BaseQueue):
 
 
 class TaggedQueue(BaseQueue):
-
     tag = 'my tag'
 
     def process(self, **kwargs):
@@ -200,3 +202,12 @@ class BaseQueueTests(TestCase):
         task.refresh_from_db()
         self.assertTrue(task.retry_allowed)
         self.assertEqual(task.error_count, 0)
+
+
+class WorkerTests(TestCase):
+
+    def test__all_workers_thread(self):
+        thread = AllWorkersThread()
+        thread.start()
+        self.assertTrue(thread.is_alive())
+        thread.handle_stop_signal(signal.CTRL_C_EVENT, frame=None)
