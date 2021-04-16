@@ -1,3 +1,4 @@
+import inspect
 import logging
 import signal
 import threading
@@ -9,10 +10,10 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .exceptions import NoEligibleTaskException, FatalTaskException, NoIncrementErrorCountException
-from .models import Task
 from . import util
 from .app_settings import get_setting, Keys
+from .exceptions import NoEligibleTaskException, FatalTaskException, NoIncrementErrorCountException
+from .models import Task
 from .queues import BaseQueue
 
 _logger = logging.getLogger(__name__)
@@ -157,7 +158,11 @@ class AllWorkersThread(threading.Thread):
         self.__log('In __init__(): Worker class names: %s' % worker_class_names)
         self.__workers = []
         for name in worker_class_names:
-            worker = util.import_class(name, check_subclass_of=BaseWorker)(logger=self.__logger)
+            klass = util.import_class(name, check_subclass_of=BaseWorker)
+            kwargs = {}
+            if 'logger' in inspect.signature(klass).parameters:
+                kwargs['logger'] = self.__logger
+            worker = klass(**kwargs)
             self.__workers.append(worker)
 
     def __attach_signal_handlers(self):
