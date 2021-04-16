@@ -82,7 +82,7 @@ class BaseWorker(threading.Thread):
         self._log('Processing task: %s' % task)
 
         try:
-            queue = util.import_class(task.queue_class_name, BaseQueue)()
+            queue = util.import_class(task.queue_class_name, check_subclass_of=BaseQueue)()
             result = queue.process(**task.data)
             self._log('Task processed. Result: %s' % result)
             task.delete()
@@ -135,17 +135,14 @@ class BaseWorker(threading.Thread):
 
 class AllWorkersThread(threading.Thread):
 
-    def __init__(self, logger=_logger):
+    def __init__(self, logger=_logger, handle_signals=True):
         super().__init__()
         self.__logger = logger
-        self.__attach_signal_handlers()
 
-        worker_class_names = get_setting(Keys.WORKERS)
-        self.__log('In __init__(): Worker class names: %s' % worker_class_names)
-        self.__workers = [
-            util.import_class(name, check_subclass_of=BaseWorker)()
-            for name in worker_class_names
-        ]
+        if handle_signals:
+            self.__attach_signal_handlers()
+
+        self.__load_workers()
 
     def run(self):
         [w.start() for w in self.__workers]
@@ -154,6 +151,14 @@ class AllWorkersThread(threading.Thread):
     def handle_stop_signal(self, sig_num, frame):
         self.__log(f'{self}: Signal received: {sig_num} {frame}')
         [w.stop_flag.set() for w in self.__workers]
+
+    def __load_workers(self):
+        worker_class_names = get_setting(Keys.WORKERS)
+        self.__log('In __init__(): Worker class names: %s' % worker_class_names)
+        self.__workers = []
+        for name in worker_class_names:
+            worker = util.import_class(name, check_subclass_of=BaseWorker)(logger=self.__logger)
+            self.__workers.append(worker)
 
     def __attach_signal_handlers(self):
         success = False
