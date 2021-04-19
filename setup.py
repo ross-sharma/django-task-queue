@@ -14,7 +14,7 @@ setup(
     description="Simple task queue for Python Django framework",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/ross-sharma/django_task_queue",
+    url="https://github.com/ross-sharma/django-task-queue",
     author="Ross Sharma",
     author_email="ross@ross-sharma.com",
     license="MIT",
