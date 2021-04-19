@@ -1,0 +1,1 @@
+recursive-include django_task_queue *.py
