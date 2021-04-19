@@ -211,5 +211,5 @@ class WorkerTests(TestCase):
         thread.start()
         self.assertTrue(thread.is_alive())
         thread.handle_stop_signal(signal.SIGINT, frame=None)
-        thread.join(1)
+        thread.join(5)
         self.assertFalse(thread.is_alive())
