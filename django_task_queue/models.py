@@ -1,10 +1,14 @@
 import json
 
 from django.db import models
+from django.db.models import Manager
 
 
-class Task(models.Model):
+class TaskType:
+    objects: Manager
 
+
+class Task(models.Model, TaskType):
     created_datetime = models.DateTimeField(db_index=True, auto_now_add=True)
     last_attempt_datetime = models.DateTimeField(db_index=True, null=True)
     lock_id = models.CharField(blank=True, max_length=64)
