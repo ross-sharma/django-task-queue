@@ -35,7 +35,7 @@ class BaseWorker(threading.Thread):
         self.min_seconds_between_processing_attempts = get_setting(Keys.DEFAULT_MIN_SECONDS_BETWEEN_ATTEMPTS)
         self._logger = logger or _logger
         self.stop_flag = threading.Event()
-        super().__init__(name='thread-' + self.__class__.__name__)
+        super().__init__(name=f'{self.__class__.__name__}-thread')
 
     def run(self):
         self._log('Thread starting.')
