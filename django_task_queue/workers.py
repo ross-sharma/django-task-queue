@@ -143,8 +143,8 @@ class AllWorkersThread(threading.Thread):
         [w.start() for w in self.__workers]
         [w.join() for w in self.__workers]
 
-    def handle_stop_signal(self, sig_num, frame):
-        self.__log(f'{self}: Signal received: {sig_num} {frame}')
+    def handle_stop_signal(self):
+        self.__log(f'{self}: Stop signal received. Stopping child threads...')
         [w.stop_flag.set() for w in self.__workers]
 
     def __load_workers(self):
@@ -164,9 +164,3 @@ class AllWorkersThread(threading.Thread):
     def __log(self, msg, level=logging.INFO):
         msg = f'{__name__}: {msg}'
         self.__logger.log(msg=msg, level=level)
-
-
-def start_all_workers():
-    thread = AllWorkersThread()
-    thread.start()
-    thread.join()
