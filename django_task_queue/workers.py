@@ -29,13 +29,12 @@ _stop_signals = list(filter(lambda s: s, [getattr(signal, name, None) for name i
 
 class BaseWorker(threading.Thread):
 
-    def __init__(self, tags=None, logger=_logger):
+    def __init__(self, tags=None, logger=None):
         self.tags = tags or ['__default__']
         self.lock_id = uuid4()
         self.min_seconds_between_processing_attempts = get_setting(Keys.DEFAULT_MIN_SECONDS_BETWEEN_ATTEMPTS)
-        self._logger = logger
+        self._logger = logger or _logger
         self.stop_flag = threading.Event()
-        self._log_prefix = f'({self.__class__.__name__}, {self.tags})'
         super().__init__(name='thread-' + self.__class__.__name__)
 
     def run(self):
@@ -116,7 +115,6 @@ class BaseWorker(threading.Thread):
             self.process_one()
 
     def _log(self, msg, level=logging.INFO):
-        msg = f'{self._log_prefix} {msg}'
         self._logger.log(level=level, msg=msg)
 
     def __log_exception(self, exc):
@@ -153,13 +151,15 @@ class AllWorkersThread(threading.Thread):
         worker_class_names = get_setting(Keys.WORKERS)
         self.__log('In __init__(): Worker class names: %s' % worker_class_names)
         self.__workers = []
-        for name in worker_class_names:
-            klass = util.import_class(name, check_subclass_of=BaseWorker)
-            kwargs = {}
-            if 'logger' in inspect.signature(klass).parameters:
-                kwargs['logger'] = self.__logger
-            worker = klass(**kwargs)
-            self.__workers.append(worker)
+        [self.__load_worker(name) for name in worker_class_names]
+
+    def __load_worker(self, name):
+        klass = util.import_class(name, check_subclass_of=BaseWorker)
+        kwargs = {}
+        if 'logger' in inspect.signature(klass).parameters:
+            kwargs['logger'] = self.__logger
+        worker = klass(**kwargs)
+        self.__workers.append(worker)
 
     def __log(self, msg, level=logging.INFO):
         msg = f'{__name__}: {msg}'
