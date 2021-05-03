@@ -1,17 +1,17 @@
-import signal
 from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
-from django_task_queue.exceptions import (
+from . import util
+from .exceptions import (
     NoEligibleTaskException,
     FatalTaskException,
     NoIncrementErrorCountException,
 )
-from django_task_queue.queues import BaseQueue
-from django_task_queue.workers import BaseWorker, AllWorkersThread
+from .queues import BaseQueue
+from .workers import BaseWorker, AllWorkersThread
 
 
 class AdditionQueue(BaseQueue):
@@ -213,3 +213,22 @@ class WorkerTests(TestCase):
         thread.handle_stop_signal()
         thread.join(5)
         self.assertFalse(thread.is_alive())
+
+
+class BulkAppendTests(TestCase):
+
+    def test__bulk_append__tasks_created(self):
+        addition_task = AdditionQueue.get_task(x=1, y=2)
+        tagged_task = TaggedQueue.get_task()
+        util.bulk_append([addition_task, tagged_task])
+
+        self.assertEqual(AdditionQueue.count(), 1)
+        self.assertEqual(TaggedQueue.count(), 1)
+
+        BaseWorker().process_all()
+        self.assertEqual(AdditionQueue.count(), 0)
+        self.assertEqual(TaggedQueue.count(), 1)
+
+        BaseWorker(tags=[TaggedQueue.tag]).process_all()
+        self.assertEqual(AdditionQueue.count(), 0)
+        self.assertEqual(TaggedQueue.count(), 0)

@@ -13,16 +13,7 @@ class BaseQueue:
 
     @classmethod
     def append(cls, **kwargs):
-        task = Task()
-        task.data = kwargs
-        task.queue_class_name = cls.__queue_class_name()
-        task.tag = cls.tag
-
-        task.max_attempts = cls.max_attempts if cls.max_attempts is not None \
-            else get_setting(Keys.DEFAULT_TASK_PRIORITY)
-        task.priority = cls.task_priority if cls.task_priority is not None \
-            else get_setting(Keys.DEFAULT_MAX_ATTEMPTS)
-
+        task = cls.get_task(**kwargs)
         task.save()
         cls._log('Task queued: %s' % task.data)
         return task
@@ -43,3 +34,17 @@ class BaseQueue:
     def _log(cls, msg, level=logging.INFO):
         msg = f'({cls.__name__}) {msg}'
         log.log(level=level, msg=msg)
+
+    @classmethod
+    def get_task(cls, **kwargs):
+        task = Task()
+        task.data = kwargs
+        task.queue_class_name = cls.__queue_class_name()
+        task.tag = cls.tag
+
+        task.max_attempts = cls.max_attempts if cls.max_attempts is not None \
+            else get_setting(Keys.DEFAULT_TASK_PRIORITY)
+        task.priority = cls.task_priority if cls.task_priority is not None \
+            else get_setting(Keys.DEFAULT_MAX_ATTEMPTS)
+
+        return task
