@@ -36,7 +36,7 @@ class BaseWorker(threading.Thread):
         self._logger = logger
         self.stop_flag = threading.Event()
         self._log_prefix = f'({self.__class__.__name__}, {self.tags})'
-        super().__init__()
+        super().__init__(name='thread-' + self.__class__.__name__)
 
     def run(self):
         self._log('Thread starting.')
@@ -136,13 +136,9 @@ class BaseWorker(threading.Thread):
 
 class AllWorkersThread(threading.Thread):
 
-    def __init__(self, logger=_logger, handle_signals=True):
-        super().__init__()
+    def __init__(self, logger=_logger, **kwargs):
+        super().__init__(**kwargs)
         self.__logger = logger
-
-        if handle_signals:
-            self.__attach_signal_handlers()
-
         self.__load_workers()
 
     def run(self):
@@ -164,18 +160,6 @@ class AllWorkersThread(threading.Thread):
                 kwargs['logger'] = self.__logger
             worker = klass(**kwargs)
             self.__workers.append(worker)
-
-    def __attach_signal_handlers(self):
-        success = False
-        for sig_num in _stop_signals:
-            try:
-                signal.signal(sig_num, self.handle_stop_signal)
-                self.__log('Attached to signal %s' % sig_num)
-                success = True
-            except Exception:
-                pass
-        if not success:
-            raise OSError('Unable to attach to any of the following signals: %s' % _stop_signals)
 
     def __log(self, msg, level=logging.INFO):
         msg = f'{__name__}: {msg}'
