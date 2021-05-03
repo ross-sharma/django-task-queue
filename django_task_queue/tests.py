@@ -81,9 +81,9 @@ class BaseQueueTests(TestCase):
         return self.queue_class.append(1, 2)
 
     def test__add_task__creates_task(self):
-        self.assertEqual(0, self.worker.count)
+        self.assertEqual(0, self.worker.count())
         task = self.__append_task()
-        self.assertEqual(1, self.worker.count)
+        self.assertEqual(1, self.worker.count())
         self.assertEqual(
             task.data,
             {'x': 1, 'y': 2},
@@ -115,7 +115,7 @@ class BaseQueueTests(TestCase):
         pop1 = worker1.pop()
         pop2 = worker2.pop()
 
-        self.assertEqual(self.worker.count_processing, 2)
+        self.assertEqual(self.worker.count_processing(), 2)
         self.assertNotEqual(pop1.lock_id, pop2.lock_id)
 
         # Both tasks now locked. Test that pop returns None using different worker instances.
@@ -134,16 +134,16 @@ class BaseQueueTests(TestCase):
         self.__append_task()
         result = self.worker.process_one()
         self.assertEqual(3, result)
-        self.assertEqual(0, self.worker.count_processing)
-        self.assertEqual(0, self.worker.count)
+        self.assertEqual(0, self.worker.count_processing())
+        self.assertEqual(0, self.worker.count())
 
     def test__process_one__raises_exception__sets_error_fields(self):
         msg = 'An error message'
         task = ErrorQueue.append(msg)
         result = self.worker.process_one()  # Task raised an exception
         self.assertEqual(result.__class__, ErrorQueue.ForcedException)
-        self.assertEqual(0, self.worker.count_processing)
-        self.assertEqual(1, self.worker.count)
+        self.assertEqual(0, self.worker.count_processing())
+        self.assertEqual(1, self.worker.count())
 
         # Check error was processed correctly
         task.refresh_from_db()

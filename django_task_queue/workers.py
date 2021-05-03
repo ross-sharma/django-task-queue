@@ -48,11 +48,9 @@ class BaseWorker(threading.Thread):
         else:
             self._log('Stop flag set. Thread terminating.')
 
-    @property
     def count(self):
         return self.__filter().count()
 
-    @property
     def count_processing(self):
         return self.__filter().exclude(lock_id='').count()
 
