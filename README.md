@@ -625,6 +625,6 @@ The `Task` and `FailedTask` can be viewed and edited using the Django Admin inte
 Notably, the "note" field of the  can be used to search for `Tasks` and `FailedTasks`.
 The `traceback_str`, `exc_class`, and `error_description` fields of `FailedTasks` are also searchable.
 
-[<img src="https://github.com/ross-sharma/django-task-queue/blob/master/img/tasks_admin.jpg?raw=true" alt="drawing" width="200"/>](https://raw.githubusercontent.com/ross-sharma/django-task-queue/refs/heads/master/img/tasks_admin.jpg)
+[<img src="https://github.com/ross-sharma/django-task-queue/blob/master/img/tasks_admin.jpg?raw=true" alt="drawing" width="200"/>](https://github.com/ross-sharma/django-task-queue/blob/master/img/tasks_admin.jpg?raw=true)
 
-[<img src="https://github.com/ross-sharma/django-task-queue/blob/master/img/failedtasks_admin.jpg?raw=true" alt="drawing" width="200"/>](https://raw.githubusercontent.com/ross-sharma/django-task-queue/refs/heads/master/img/failedtasks_admin.jpg)
+[<img src="https://github.com/ross-sharma/django-task-queue/blob/master/img/failedtasks_admin.jpg?raw=true" alt="drawing" width="200"/>](https://github.com/ross-sharma/django-task-queue/blob/master/img/failedtasks_admin.jpg?raw=true)
