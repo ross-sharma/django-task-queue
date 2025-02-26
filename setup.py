@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="django-task-queue",
-    version="6.0.0",
+    version="6.1.0",
     description="Simple task queue for the Python Django web framework",
     long_description=README,
     long_description_content_type="text/markdown",
