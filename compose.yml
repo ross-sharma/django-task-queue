@@ -1,0 +1,16 @@
+services:
+  db:
+    ports:
+      - "5432:5432"
+    image: postgres:15.3
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+    volumes:
+      - .db/:/var/lib/postgresql/data
+    command: ["postgres", "-c", "log_statement=all"]
+    logging:
+        options:
+            max-size: "1m"
+            max-file: "10"

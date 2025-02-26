@@ -128,3 +128,5 @@ scripts/
 
 .idea
 .vscode
+
+.db/

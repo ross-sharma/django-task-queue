@@ -10,8 +10,8 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="django-task-queue",
-    version="2.0.1",
-    description="Simple task queue for Python Django framework",
+    version="6.0.0",
+    description="Simple task queue for the Python Django web framework",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/ross-sharma/django-task-queue",
@@ -21,9 +21,8 @@ setup(
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
     ],
-    packages=find_packages(exclude=["dummy_project"]),
+    packages=find_packages(),
     include_package_data=True,
     install_requires=["django"],
     entry_points={
