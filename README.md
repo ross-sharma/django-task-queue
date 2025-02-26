@@ -26,7 +26,8 @@ A simple task queue for Django web framework
   - [Creating workers programmatically](#creating-workers-programmatically)
 - [Failed Tasks](#failed-tasks)
 - [Django Admin](#django-admin)
- 
+
+<a id="motivation"></a> 
 ## Motivation
 Django Task Queue is a simple task queue for Django. 
 It is designed to be easy to use and to require minimal setup. 
@@ -46,6 +47,7 @@ Here are some advantages of using Django Task Queue:
 
 
 
+<a id="installation"></a>
 ## Installation
 Using ```pip```
 ```commandline
@@ -63,6 +65,7 @@ Then, create the database tables by running ```migrate```:
 python manage.py migrate
 ```
 
+<a id="quick-start"></a>
 ## Quick Start
 *Note: The quick start example omits type hints for the sake of brevity. 
 Later examples will include full type hints.*
@@ -136,6 +139,7 @@ You can stop the worker by pressing ```Ctrl+C```.
 250224 10:20:39 django_task_queue INFO MainThread: <Worker(Worker-thread, stopped 17416)> stopped.
 ```
 
+<a id="configuration"></a>
 ## Configuration
 The quick start example above creates a single worker thread that processes all tasks.
 We can define a ```DJANGO_TASK_QUEUE``` setting in ```settings.py``` to configure the workers.
@@ -197,7 +201,10 @@ Here are the settings for each set of worker:
 |```sleep_seconds_when_empty``` |  Optional `int`. Default `1`. Defines how many seconds the workers should sleep when there are no tasks in the queue                                                        |
 |```queue_classes``` | Optional `list[str]`. Default `[]`. A list of queue classes that the workers should process. <br/>If the list is empty, the workers will process **all queues**.                                         |
 
+<a id="queues"></a>
 ## Queues
+
+<a id="defining-a-queue"></a>
 ### Defining a queue
 All queues classes must inherit from the `BaseQueue` class. The `process` method must be overridden.
 
@@ -230,6 +237,7 @@ class PersonQueue[T: Person](BaseQueue[T]):
         return None
 ```
 
+<a id="adding-tasks"></a>
 ### Adding tasks
 Use the `add_task` method of the queue class to add tasks to the queue.
 ```python
@@ -264,6 +272,7 @@ It is returned by the `add_task` for informational purposes only.
 For more information about `TaskInfo`, see the [examples](#examples) section.
 
 
+<a id="processing-tasks"></a>
 ### Processing tasks
 All queues must override the `process` method. This method is called by the worker to process the task.
 There are three ways the `process` method can return:
@@ -281,7 +290,10 @@ See [examples](#examples) for usage information.
 |count_attempt| Optional `bool`. Default `True`. If `False`, the task's `attempt_count` will not be incremented.|
 
 
+<a id="examples"></a>
 ## Examples
+
+<a id="getting-the-task-arguments"></a>
 ### Getting the task arguments
 The task arguments that were passed to the `add_task` method can be retrieved using the `get_arg` 
 method of the `TaskInfo` object. May throw a `django_task_queue.DeserializionExc` if the data cannot be deserialized.
@@ -304,6 +316,7 @@ class MyQueue[T:str](BaseQueue):
         return None
 ```
 
+<a id="scheduling-a-task-for-later"></a>
 ### Scheduling a task for later
 The optional `first_attempt_datetime` argument of the `add_task` method can be used to schedule a task for processing at a later time.
 ```python
@@ -316,6 +329,7 @@ DoNothingQueue.add_task(None, first_attempt_datetime=when)
 ```
 
 
+<a id="prioritizing-tasks"></a>
 ### Prioritizing tasks
 Tasks can be assigned a priority. Higher priority tasks will always be tried before lower priority tasks.
 The default priority is 0.
@@ -326,6 +340,7 @@ from django_task_queue.examples import DoNothingQueue
 DoNothingQueue.add_task(None, priority=1)
 ```
 
+<a id="preventing-duplicate-tasks"></a>
 ### Preventing duplicate tasks
 Tasks can be prevented from being added to the queue if they have the same `dupe_key`.
 If the `dupe_key` is not `None`, and a task with the same `dupe_key` already exists in the queue,
@@ -344,6 +359,7 @@ except DupeKeyExc:
     pass
 ```
 
+<a id="limiting-maximum-attempts"></a>
 ### Limiting maximum attempts
 This example shows how to use the `Retry` class to limit the number of times a task can be retried.
 When processing the task, the `attempt_count` attribute of the `task_info` object can be used to determine how many 
@@ -359,6 +375,7 @@ class MaxAttemptsQueue[T: None](BaseQueue[T]):
         return Retry()
 ```
 
+<a id="ignoring-attempts"></a>
 ### Ignoring attempts
 Sometimes, a task can fail for reasons that do not warrant increasing the attempt count.
 For example, we might want to ignore an attempt if it fails due to a network error.
@@ -387,6 +404,7 @@ class DelayedRetryExample[T: int](BaseQueue[T]):
         return Retry(when=timezone.now() + timezone.timedelta(seconds=60))
 ```
 
+<a id="exponential-backoff"></a>
 ### Exponential backoff
 This example shows how to use the `Retry` class to implement exponential backoff.
 Each time the task fails, it is retried with a delay that increases exponentially,
@@ -412,6 +430,7 @@ class ExponentialBackoff[T: None](BaseQueue[T]):
         return Retry(when=retry_time)
 ```
 
+<a id="interrupting-a-long-running-task"></a>
 ### Interrupting a long-running task
 This example shows how to interrupt a long-running task when the worker is stopped.
 When a worker is stopped, it must wait for any currently running tasks to finish before it can exit.
@@ -435,6 +454,7 @@ class StoppableTaskQueue[T: None](BaseQueue[T]):
         return None
 ```
 
+<a id="a-complete-example"></a>
 ### A complete example
 This example shows how previous examples can be combined for a real-life situation.
 It calls a method `_long_running_task`, which simulates a long-running task that can fail for various reasons.
@@ -543,7 +563,10 @@ class CompleteExampleQueue(BaseQueue[CompleteExampleArg]):
 
 
 
+<a id="workers"></a>
 ## Workers
+
+<a id="creating-workers-programmatically"></a>
 ### Creating workers programmatically
 The `django_task_queue.WorkerGroup` is a subclass of `threading.Thread` and can be used
 to control a group of workers programmatically.
@@ -585,6 +608,7 @@ This method will wait for all threads to stop before returning.
 - `request_stop()` This sets a flag that tells the workers to stop processing tasks.
 This method will return immediately.
 
+<a id="failed-tasks"></a>
 ## Failed Tasks
 A task can be removed from the queue for various reasons and put into the `FailedTask` table for the following reasons:
 - The `process` of the queue raised an `Exception`
@@ -595,6 +619,7 @@ The `FailedTask` objects will contain all the information about the task,
 including the arguments passed to the `add_task` method.
 In addition, it will store a traceback of the exception that caused the task to fail.
 
+<a id="django-admin"></a>
 ## Django Admin
 The `Task` and `FailedTask` can be viewed and edited using the Django Admin interface.
 Notably, the "note" field of the  can be used to search for `Tasks` and `FailedTasks`.
