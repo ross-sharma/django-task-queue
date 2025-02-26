@@ -261,10 +261,10 @@ Its full signature is:
 | Parameter | Description
 |-|-|
 |`arg`| Required. This is the data that the queue will process. <br/>It can be of any type that can be serialized with the `pickle` module.|
-|`note`| Optional `str`. A note that can be used to describe the task. <br/>The note is for informational purposes only. <br/> Task notes are searchable from the Django Admin interface.|
-|`priority` | Optional `str`. The priority of the task. <br/>Tasks with higher priority values are processed before tasks with lower priority values. <br/>The default priority is 0.|
-|`first_attempt_datetime`| Optional `datetime`. Specifies a time before which the task should not be processed. <br/>Can be used to schedule tasks for processing at a later time.|
-|`dupe_key`| Optional `str`. A unique key that can be used to prevent duplicate tasks from being added to the queue. <br/>If a task with the same dupe key already exists in the queue, the `add_task` will throw a `django_task_queue.DupeKeyExc`.
+|`note`| Optional `str`. Default `str`. A note that can be used to describe the task. <br/>The note is for informational purposes only. <br/> Task notes are searchable from the Django Admin interface.|
+|`priority` | Optional `int`. Default `0`. Tasks with higher priority values are processed before tasks with lower priority values.|
+|`first_attempt_datetime`| Optional `datetime`. Default `None`. Specifies a time before which the task should not be processed. Can be used to schedule tasks for processing at a later time.|
+|`dupe_key`| Optional `str`. Default `None`. A unique key that can be used to prevent duplicate tasks from being added to the queue. <br/>If a task with the same dupe key already exists in the queue, the `add_task` will throw a `django_task_queue.DupeKeyExc`.
 
 The `add_task` method returns a `TaskInfo` object that can be used to retrieve the task's arguments and other information.
 It contains necessary information and methods intended for usage in the `process` method of the queue.
