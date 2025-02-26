@@ -25,6 +25,7 @@ A simple task queue for Django web framework
 - [Workers](#workers)
   - [Creating workers programmatically](#creating-workers-programmatically)
 - [Failed Tasks](#failed-tasks)
+- [Django Admin](#django-admin)
  
 ## Motivation
 Django Task Queue is a simple task queue for Django. 
